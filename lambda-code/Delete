@@ -13,9 +13,9 @@ table = dynamodb.Table(table_name)
 s3 = boto3.client('s3')
 
 def lambda_handler(event, context):
-    # Extract values directly from the event body
-    created_at = event.get('CreatedAt')
-    name = event.get('Name')
+    # Extract values directly from the query string parameters
+    created_at = event.get('queryStringParameters', {}).get('CreatedAt')
+    name = event.get('queryStringParameters', {}).get('Name')
 
     try:
         # Retrieve metadata from DynamoDB

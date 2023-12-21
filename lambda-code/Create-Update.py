@@ -15,9 +15,9 @@ table = dynamodb.Table(table_name)
 s3 = boto3.client('s3')
 
 def lambda_handler(event, context):
-    # Extract values directly from the event
-    name = event.get('Name')
-    content = event.get('Content')
+    # Extract values directly from the query string parameters
+    name = event.get('queryStringParameters', {}).get('Name')
+    content = event.get('queryStringParameters', {}).get('Content')
 
     # Set date timestamp without time
     now = datetime.utcnow().date().isoformat()
@@ -39,7 +39,6 @@ def lambda_handler(event, context):
                 'CreatedAt': now,
                 'Name': name,
                 'UpdatedAt': datetime.utcnow().isoformat(),
-                # Add other metadata attributes as needed
             }
         )
 

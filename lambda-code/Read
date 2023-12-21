@@ -14,8 +14,8 @@ s3 = boto3.client('s3')
 
 def lambda_handler(event, context):
     # Extract values directly from the event body
-    created_at = event.get('CreatedAt')
-    name = event.get('Name')
+    created_at = event.get('queryStringParameters', {}).get('CreatedAt')
+    name = event.get('queryStringParameters', {}).get('Name')
 
     try:
         # Retrieve metadata from DynamoDB
@@ -63,3 +63,16 @@ def lambda_handler(event, context):
             'statusCode': 500,
             'body': json.dumps({'error': 'Internal Server Error'})
         }
+
+
+
+
+# Sample query
+    
+# {
+#  "queryStringParameters": {
+#  "CreatedAt": "2023-12-21",
+#   "Name": "SampleNameHola"
+#  }
+# }
+
