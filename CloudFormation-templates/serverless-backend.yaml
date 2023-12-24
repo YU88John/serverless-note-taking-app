@@ -1,4 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
+
+Description: 'This template creates DynamoDB table with CreatedAt(PK) and Name(SK), S3 Bucket, 3 Lambda functions for CRUD operations on DynamoDB and S3, Lambda function that empties S3 Bucket, and API Gateway that will server those functions'
+
 Parameters:
   CodeBucketName:
     Type: String
@@ -25,7 +28,7 @@ Parameters:
     Description: Enter the name for the API deployment stage 
     Default: prod 
 
-
+ 
 Resources:
   NoteDynamoDBTable:
     Type: 'AWS::DynamoDB::Table'
@@ -44,7 +47,6 @@ Resources:
 
   NoteS3Bucket:
     Type: 'AWS::S3::Bucket'
-  
 
   CULambdaFunction:
     Type: 'AWS::Lambda::Function'
@@ -314,23 +316,26 @@ Resources:
                   - !GetAtt READLambdaFunction.Arn
                   - !GetAtt DELETELambdaFunction.Arn
                   - !GetAtt S3BucketDeleteFunction.Arn
-
-
+  
 Outputs:
-  S3BucketDeleteFunctionInvokeLink:
-    Description: Invoke link for S3BucketDeleteFunction
+  ApiGatewayCRUDInvokeUrl:
+    Description: API Gateway Invoke URL for CRUD functions 
     Value: !Sub
       - >-
-        arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function/${LambdaFunctionName}
-      - LambdaFunctionName: !Ref S3BucketDeleteFunction
-
-  ApiGatewayInvokeUrl:
-    Description: API Gateway Invoke URL
-    Value: !Sub
-      - >-
-        https://${ApiGatewayId}.execute-api.${AWS::Region}.amazonaws.com/${ApiGatewayStageName}/
+        https://${ApiGatewayId}.execute-api.${AWS::Region}.amazonaws.com/${ApiGatewayStageName}/${ApiGatewayResource}
       - ApiGatewayId: !Ref MyCRUDRestApi
-        ApiGatewayStageName: 'prod'
+        ApiGatewayStageName: !Ref ApiStageName
+        ApiGatewayResource: !Ref ApiCRUDResourceName
+
+  ApiGatewayS3BucketEmptyInvokeUrl:
+    Description: API Gateway Invoke URL for S3 Empty Bucket function
+    Value: !Sub
+      - >-
+        https://${ApiGatewayId}.execute-api.${AWS::Region}.amazonaws.com/${ApiGatewayStageName}/${ApiGatewayResource}
+      - ApiGatewayId: !Ref MyCRUDRestApi
+        ApiGatewayStageName: !Ref ApiStageName
+        ApiGatewayResource: !Ref ApiEmptyS3ResourceName
+
 
 
 
