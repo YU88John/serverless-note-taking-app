@@ -31,14 +31,20 @@ In this project, we will create a note taking app with serverless backend using 
 - `/lambda-code`: Source codes for CRUD and EmptyS3Bucket Lambda function
 - `/zipped-codes`: Zip format of Lambda functions codes
 
+<br>
 
-> DISCLAIMER: This project repository only contains backend configurations. It does not contain frontend application but the backend will fit with any CRUD operations apps.
+> [!NOTE]
+> This project repository only contains backend configurations. It does not contain frontend application but the backend will fit with any CRUD operations apps.
+
+<br>
 
 ### 1. Create the infrastructure
 
-I have created a public S3 bucket that contains CloudFormation templates and Lambda codes. 
-
 We will create two stacks for this project: backend and CloudTrail. 
+
+I have already created a public S3 bucket that contains CloudFormation templates and Lambda codes. You can readily use it.
+
+
 
 #### Create a stack that will deploy and enable CloudTrail for the account
 
@@ -50,7 +56,9 @@ This stack will create three main things:
 Since it's important to harden the security, the API logs will be encrypted both at-rest and on-flight. Apply the stack via cli:
 
 ```
-aws cloudformation create-stack --stack-name mycloudtrailstack --template-body https://code-for-note-functions-86.s3.amazonaws.com/cloudtrail-kms-s3.yaml
+aws cloudformation create-stack \
+--stack-name mycloudtrailstack \
+--template-body https://code-for-note-functions-86.s3.amazonaws.com/cloudtrail-kms-s3.yaml
 ```
 
 If you don't have aws cli configured, you can apply it via <a href="https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/quickcreate?templateURL=https%3A%2F%2Fcode-for-note-functions-86.s3.amazonaws.com%2Fcloudtrail-kms-s3.yaml&stackName=mycloudtrailstack">One-click deployment link</a>. 
@@ -59,15 +67,24 @@ If you don't have aws cli configured, you can apply it via <a href="https://us-e
 
 In this project, we will use Lambda functions for CRUD operations, DynamoDB for storing metadata, and S3 bucket for storing media such as content or images.
 
+This stack will create four main things:
+- DynamoDB table
+- S3 bucket
+- Lambda functions
+- API Gateway
+
 ```
-aws cloudformation create-stack   --stack-name myserverlessappstack   --template-body https://code-for-note-functions-86.s3.amazonaws.com/serverless-backend.yaml --capabilities CAPABILITY_IAM
+aws cloudformation create-stack \ 
+--stack-name myserverlessappstack \
+--template-body https://code-for-note-functions-86.s3.amazonaws.com/serverless-backend.yaml \
+--capabilities CAPABILITY_IAM
 ```
 
 <a href="https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/quickcreate?templateURL=https%3A%2F%2Fcode-for-note-functions-86.s3.amazonaws.com%2Fserverless-backend.yaml&stackName=myserverlessappstack&param_CodeBucketName=code-for-note-functions-86&param_ApiCRUDResourceName=notes&param_ApiEmptyS3ResourceName=deleteObjects&param_LambdaRuntime=python3.12&param_ApiStageName=prod">One-click deployment</a> (This may need IAM role with admin privileges)
 
 ### 2. Test the APIs
 
-I have enabled CORS for my API Gateway. You can adjust this configuration based on your usage. The CloudFormation template will output two invoke links: CRUD and EmptyBucket. 
+I have enabled CORS for my API Gateway. You can adjust/disable this configuration based on your usage. The CloudFormation template will output two invoke links: CRUD and EmptyBucket. 
 
 Let's test these APIs. You can use different tools such as curl. However, I will use Postman since it is more convenient. 
 
@@ -75,7 +92,7 @@ Here's the sample of how POST API method looks like.
 
 ![POST HTTP method](Postman-POST.jpg)
 
-The expected query parameters that I have written in my Lmabda Codes are as follows:
+The expected query parameters that I have written in my Lambda codes are as follows:
 
 - **CU function**
     - Name 
@@ -87,7 +104,7 @@ The expected query parameters that I have written in my Lmabda Codes are as foll
     - CreatedAt
     - Name
 
-You can adjust the lamda code based on your application use case.
+You can adjust the Lamda code based on your application use case.
 
 Now, the `CULambdaFunction` stores the metadata(`CreatedAt` and `Name`)in the DynamoDB table and media(`Content`) in the S3 bucket. It's important to note that CloudFormation won't be able to delete a non-empty S3 bucket. 
 
