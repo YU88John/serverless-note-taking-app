@@ -7,7 +7,7 @@ from botocore.exceptions import ClientError
 table_name = os.environ.get('DYNAMODB_TABLE_NAME')
 s3_bucket_name = os.environ.get('S3_BUCKET_NAME')
 
-# Create DynamoDB and S3 resources
+# Create DynamoDB and S3 resources with aws sdk
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table(table_name)
 s3 = boto3.client('s3')
@@ -31,7 +31,7 @@ def lambda_handler(event, context):
             item = response['Item']
 
             # Fetch note content from S3
-            s3_object_key = f'notes/{name}.txt'  # Adjust the format as needed
+            s3_object_key = f'notes/{name}.txt'  
 
             # Delete content from S3
             s3.delete_object(Bucket=s3_bucket_name, Key=s3_object_key)

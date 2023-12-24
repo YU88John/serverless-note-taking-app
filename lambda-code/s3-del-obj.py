@@ -1,5 +1,6 @@
 import os
 import boto3
+import json
 
 def lambda_handler(event, context):
     bucket_name = os.environ.get('S3_BUCKET_NAME')
@@ -7,7 +8,7 @@ def lambda_handler(event, context):
     if not bucket_name:
         return {
             'statusCode': 400,
-            'body': 'S3_BUCKET_NAME environment variable not set'
+            'body': json.dumps({'S3_BUCKET_NAME environment variable not set'})
         }
 
     # Create an S3 client
@@ -20,5 +21,5 @@ def lambda_handler(event, context):
     
     return {
         'statusCode': 200,
-        'body': f'All objects deleted from S3 bucket: {bucket_name}'
+        'body': json.dumps({'All objects deleted from S3 bucket': bucket_name})
     }

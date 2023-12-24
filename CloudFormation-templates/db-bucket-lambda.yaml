@@ -1,4 +1,31 @@
 AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  CodeBucketName:
+    Type: String
+    Description: Enter the name of the S3 bucket containing Lambda codes
+    Default: code-for-note-functions-86
+
+  LambdaRuntime:
+    Type: String
+    Description: Enter the runtime for your Lambda functions
+    Default: python3.12
+
+  ApiCRUDResourceName:
+    Type: String
+    Description: Enter the name for CRUD functions API resource 
+    Default: notes
+
+  ApiEmptyS3ResourceName:
+    Type: String
+    Description: Enter the name for empty bucket function API resource
+    Default: deleteObjects
+
+  ApiStageName:  
+    Type: String 
+    Description: Enter the name for the API deployment stage 
+    Default: prod 
+
+
 Resources:
   NoteDynamoDBTable:
     Type: 'AWS::DynamoDB::Table'
@@ -22,7 +49,7 @@ Resources:
   CULambdaFunction:
     Type: 'AWS::Lambda::Function'
     Properties:
-      Runtime: python3.12
+      Runtime: !Ref LambdaRuntime
       Handler: Create-Update.lambda_handler 
       Role: !GetAtt MyLambdaExecutionRole.Arn
       Environment:
@@ -30,14 +57,14 @@ Resources:
           DYNAMODB_TABLE_NAME: !Ref NoteDynamoDBTable
           S3_BUCKET_NAME: !Ref NoteS3Bucket
       Code:
-        S3Bucket: code-for-note-functions-86
+        S3Bucket: !Ref CodeBucketName
         S3Key: Create-Update.zip
       Timeout: 30
 
   READLambdaFunction:
     Type: 'AWS::Lambda::Function'
     Properties:
-      Runtime: python3.12
+      Runtime: !Ref LambdaRuntime
       Handler: Read.lambda_handler 
       Role: !GetAtt MyLambdaExecutionRole.Arn
       Environment:
@@ -45,14 +72,14 @@ Resources:
           DYNAMODB_TABLE_NAME: !Ref NoteDynamoDBTable
           S3_BUCKET_NAME: !Ref NoteS3Bucket
       Code:
-        S3Bucket: code-for-note-functions-86
+        S3Bucket: !Ref CodeBucketName
         S3Key: Read.zip
       Timeout: 30
 
   DELETELambdaFunction:
     Type: 'AWS::Lambda::Function'
     Properties:
-      Runtime: python3.12
+      Runtime: !Ref LambdaRuntime
       Handler: Delete.lambda_handler 
       Role: !GetAtt MyLambdaExecutionRole.Arn
       Environment:
@@ -60,14 +87,14 @@ Resources:
           DYNAMODB_TABLE_NAME: !Ref NoteDynamoDBTable
           S3_BUCKET_NAME: !Ref NoteS3Bucket
       Code:
-        S3Bucket: code-for-note-functions-86
+        S3Bucket: !Ref CodeBucketName
         S3Key: Delete.zip
       Timeout: 30
 
   S3BucketDeleteFunction:
     Type: 'AWS::Lambda::Function'
     Properties:
-      Runtime: python3.12
+      Runtime: !Ref LambdaRuntime
       Handler: s3-del-obj.lambda_handler 
       Role: !GetAtt MyLambdaExecutionRole.Arn
       Environment:
@@ -109,7 +136,7 @@ Resources:
     Properties:
       RestApiId: !Ref MyCRUDRestApi
       ParentId: !GetAtt [MyCRUDRestApi, RootResourceId]
-      PathPart: 'notes'
+      PathPart: !Ref ApiCRUDResourceName
 
   CULambdaFunctionMethod:
     Type: 'AWS::ApiGateway::Method'
@@ -192,17 +219,71 @@ Resources:
       HttpMethod: OPTIONS
       AuthorizationType: NONE
 
+  MyS3DeleteAPIResource:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      RestApiId: !Ref MyCRUDRestApi
+      ParentId: !GetAtt [MyCRUDRestApi, RootResourceId]
+      PathPart: !Ref ApiEmptyS3ResourceName
+
+  S3DeleteLambdaFunctionMethod:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: POST
+      ResourceId: !Ref MyS3DeleteAPIResource
+      RestApiId: !Ref MyCRUDRestApi
+      Integration:
+        ConnectionType: INTERNET
+        Credentials: !GetAtt ApiGatewayIamRole.Arn
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub 
+          - >-
+            arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaFuncNameArn}/invocations
+          - LambdaFuncNameArn: !GetAtt S3BucketDeleteFunction.Arn
+
+  MyS3DeleteApiOptions:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      ResourceId: !Ref MyS3DeleteAPIResource
+      RestApiId: !Ref MyCRUDRestApi
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            StatusCode: 200
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestParameters:
+          integration.request.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+          integration.request.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
+          integration.request.header.Access-Control-Allow-Origin: "'*'"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+          StatusCode: 200
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+
   ApiGatewayStage:
     Type: AWS::ApiGateway::Stage
     Properties:
       DeploymentId: !Ref ApiGatewayDeployment
-      Description: Lambda API Stage v0
+      Description: Lambda API Stage
       RestApiId: !Ref MyCRUDRestApi
-      StageName: 'v0'
+      StageName: !Ref ApiStageName
 
   ApiGatewayDeployment:
     Type: AWS::ApiGateway::Deployment
-    DependsOn: [CULambdaFunctionMethod, READLambdaFunctionMethod, DELETELambdaFunctionMethod]
+    DependsOn: [CULambdaFunctionMethod, READLambdaFunctionMethod, DELETELambdaFunctionMethod, S3DeleteLambdaFunctionMethod]
     Properties:
       Description: Lambda API Deployment
       RestApiId: !Ref MyCRUDRestApi
@@ -232,8 +313,24 @@ Resources:
                   - !GetAtt CULambdaFunction.Arn
                   - !GetAtt READLambdaFunction.Arn
                   - !GetAtt DELETELambdaFunction.Arn
+                  - !GetAtt S3BucketDeleteFunction.Arn
 
-    
+
+Outputs:
+  S3BucketDeleteFunctionInvokeLink:
+    Description: Invoke link for S3BucketDeleteFunction
+    Value: !Sub
+      - >-
+        arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function/${LambdaFunctionName}
+      - LambdaFunctionName: !Ref S3BucketDeleteFunction
+
+  ApiGatewayInvokeUrl:
+    Description: API Gateway Invoke URL
+    Value: !Sub
+      - >-
+        https://${ApiGatewayId}.execute-api.${AWS::Region}.amazonaws.com/${ApiGatewayStageName}/
+      - ApiGatewayId: !Ref MyCRUDRestApi
+        ApiGatewayStageName: 'prod'
 
 
 

@@ -3,7 +3,7 @@ import os
 import boto3
 from botocore.exceptions import ClientError
 from datetime import datetime
-import uuid  # for generating unique NoteID
+import uuid  
 
 # Get the DynamoDB table name and S3 bucket name from environment variables
 table_name = os.environ.get('DYNAMODB_TABLE_NAME')
@@ -17,7 +17,10 @@ s3 = boto3.client('s3')
 def lambda_handler(event, context):
     # Extract values directly from the query string parameters
     name = event.get('queryStringParameters', {}).get('Name')
-    content = event.get('queryStringParameters', {}).get('Content')
+    content = event.get('queryStringParameters', {}).get('Content') 
+    # If you want to process from event body instead of query params, use this...
+    # content = event.get('Content')
+
 
     # Set date timestamp without time
     now = datetime.utcnow().date().isoformat()
@@ -26,8 +29,8 @@ def lambda_handler(event, context):
     note_id = str(uuid.uuid4())
 
     try:
-        # Use the same S3 object key for updates
-        s3_object_key = f'notes/{name}.txt'  # Use a meaningful object key based on the note name
+        # Use the same S3 object key for updates(overwrites)
+        s3_object_key = f'notes/{name}.txt' 
 
         # Upload or overwrite content in S3
         s3.put_object(Body=content, Bucket=s3_bucket_name, Key=s3_object_key)

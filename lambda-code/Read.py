@@ -13,7 +13,7 @@ table = dynamodb.Table(table_name)
 s3 = boto3.client('s3')
 
 def lambda_handler(event, context):
-    # Extract values directly from the event body
+    # Extract values from query param
     created_at = event.get('queryStringParameters', {}).get('CreatedAt')
     name = event.get('queryStringParameters', {}).get('Name')
 
@@ -31,7 +31,7 @@ def lambda_handler(event, context):
             item = response['Item']
 
             # Fetch note content from S3
-            s3_object_key = f'notes/{name}.txt'  # Adjust the format as needed
+            s3_object_key = f'notes/{name}.txt'  
             s3_response = s3.get_object(Bucket=s3_bucket_name, Key=s3_object_key)
             note_content = s3_response['Body'].read().decode('utf-8')
 
@@ -67,7 +67,7 @@ def lambda_handler(event, context):
 
 
 
-# Sample query
+# Sample Lambda run query
     
 # {
 #  "queryStringParameters": {
