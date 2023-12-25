@@ -40,9 +40,9 @@ In this project, we will create a note-taking app with a serverless backend usin
 
 ### 1. Create the infrastructure
 
-We will create two stacks for this project: CloudTrail and backend. 
+We will create two stacks for this project: <a href="https://aws.amazon.com/cloudtrail/">CloudTrail</a> and backend. 
 
-I have already created a public S3 bucket that contains CloudFormation templates and Lambda codes that we will use in this project. You can readily use it with the following commands.
+I have already created a public S3 bucket that contains <a href="https://aws.amazon.com/cloudformation/">CloudFormation</a> templates and Lambda codes that we will use in this project. You can readily use it with the following commands.
 
 
 #### Create a stack that will deploy and enable CloudTrail for the account
@@ -66,7 +66,7 @@ If you don't have AWS CLI configured, you can apply it via <a href="https://us-e
 
 #### Create a stack that will deploy backend services
 
-For the backend in this project, we will use Lambda functions for CRUD operations, DynamoDB for storing metadata, and S3 bucket for storing media such as contents or images.
+For the backend in this project, we will use <a href="https://aws.amazon.com/lambda/">Lambda functions</a> for CRUD operations, a <a href="https://aws.amazon.com/dynamodb/">DynamoDB table</a> for storing metadata, and a <a href="https://aws.amazon.com/s3/">S3 bucket</a> for storing media such as contents or images. There will be a single <a href="https://aws.amazon.com/api-gateway/">API Gateway</a> that will invoke backend functions based on different resource paths and methods.
 
 This stack will create four main things:
 - DynamoDB table
@@ -85,7 +85,7 @@ aws cloudformation create-stack \
 
 ### 2. Test the APIs
 
-I have enabled CORS for my API Gateway. You can adjust/disable this configuration based on your usage. The CloudFormation template will output two invoke links: CRUD and EmptyBucket. 
+I have enabled <a href="https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-cors.html">CORS for my API Gateway</a>. You can adjust/disable this configuration based on your usage. The CloudFormation template will output two invoke links: CRUD and EmptyBucket. 
 
 Let's test these APIs. You can use different tools such as curl. However, I will use Postman since it is more convenient. 
 
@@ -131,4 +131,14 @@ aws cloudformation delete-stack --stack-name mycloudtrailstack
 ```
 aws cloudformation delete-stack --stack-name myserverlessappstack
 ```
+
+***
+
+## Improvements needed
+
+- Frontend UI hosted on S3 or ECS Fargate (for serverless purposes)
+- Authentication of users (JWT, Firebase, Cognito)
+    - Cognito is more expensive than other options.
+
+Any contribution is welcomed with the aim of improving this mini project. 
 
