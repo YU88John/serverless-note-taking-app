@@ -1,13 +1,13 @@
-# Note taking app with serverless backend
+# Note-taking app with serverless backend
 
-In this project, we will create a note taking app with serverless backend using AWS.
+In this project, we will create a note-taking app with a serverless backend using AWS. We will use serverless functions to process  CRUD requests, a NoSQL database to store metadata, an object storage for media content, and the API Gateway, which will serve as an endpoint for the CRUD functions.
 
 > [!CAUTION]
 > This mini project simulates an environment and its architecture might lack some best practices. It is advised against using it for production environments. 
 
 ## Prerequisites
 - AWS account 
-- AWS cli in `us-east-1` with admin privileges 
+- AWS CLI in `us-east-1` with admin privileges 
 
 ## Architecture Overview
 
@@ -28,32 +28,33 @@ In this project, we will create a note taking app with serverless backend using 
 ## Project Hierachy
 
 - `/CloudFormation-templates`: CloudFormation templates for the infrastructure
-- `/lambda-code`: Source codes for CRUD and EmptyS3Bucket Lambda function
+- `/lambda-code`: Source codes for CRUD and EmptyS3Bucket Lambda functions
 - `/zipped-codes`: Zip format of Lambda functions codes
 
 <br>
 
 > [!NOTE]
-> This project repository only contains backend configurations. It does not contain frontend application but the backend will fit with any CRUD operations apps.
+> This project repository only contains backend configurations. It does not contain a frontend application, but the backend will fit with most CRUD operations apps.
 
 <br>
 
 ### 1. Create the infrastructure
 
-We will create two stacks for this project: backend and CloudTrail. 
+We will create two stacks for this project: CloudTrail and backend. 
 
-I have already created a public S3 bucket that contains CloudFormation templates and Lambda codes. You can readily use it.
-
+I have already created a public S3 bucket that contains CloudFormation templates and Lambda codes that we will use in this project. You can readily use it with the following commands.
 
 
 #### Create a stack that will deploy and enable CloudTrail for the account
 
 This stack will create three main things:
-- KMS keys 
+- KMS keys for encryption
 - CloudTrail
 - S3 bucket for CloudTrail logs
 
-Since it's important to harden the security, the API logs will be encrypted both at-rest and on-flight. Apply the stack via cli:
+Since it's important to harden security, the API logs will be encrypted both at-rest and in-transit. For this purpose, we will generate encryption keys using <a href="https://aws.amazon.com/kms/">KMS</a> and CloudTrail will use those keys to encrypt the logs as well as the bucket.
+
+Apply the stack via cli:
 
 ```
 aws cloudformation create-stack \
@@ -61,11 +62,11 @@ aws cloudformation create-stack \
 --template-body https://code-for-note-functions-86.s3.amazonaws.com/cloudtrail-kms-s3.yaml
 ```
 
-If you don't have aws cli configured, you can apply it via <a href="https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/quickcreate?templateURL=https%3A%2F%2Fcode-for-note-functions-86.s3.amazonaws.com%2Fcloudtrail-kms-s3.yaml&stackName=mycloudtrailstack">One-click deployment link</a>. 
+If you don't have AWS CLI configured, you can apply it via <a href="https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/quickcreate?templateURL=https%3A%2F%2Fcode-for-note-functions-86.s3.amazonaws.com%2Fcloudtrail-kms-s3.yaml&stackName=mycloudtrailstack">One-click deployment link</a>. 
 
 #### Create a stack that will deploy backend services
 
-In this project, we will use Lambda functions for CRUD operations, DynamoDB for storing metadata, and S3 bucket for storing media such as content or images.
+For the backend in this project, we will use Lambda functions for CRUD operations, DynamoDB for storing metadata, and S3 bucket for storing media such as contents or images.
 
 This stack will create four main things:
 - DynamoDB table
@@ -88,7 +89,7 @@ I have enabled CORS for my API Gateway. You can adjust/disable this configuratio
 
 Let's test these APIs. You can use different tools such as curl. However, I will use Postman since it is more convenient. 
 
-Here's the sample of how POST API method looks like. 
+Here's the sample of how POST API method for CULambdaFunction looks like. 
 
 ![POST HTTP method](Postman-POST.jpg)
 
@@ -108,7 +109,7 @@ You can adjust the Lamda code based on your application use case.
 
 Now, the `CULambdaFunction` stores the metadata(`CreatedAt` and `Name`)in the DynamoDB table and media(`Content`) in the S3 bucket. It's important to note that CloudFormation won't be able to delete a non-empty S3 bucket. 
 
-I have written a python code that will be used by a Lambda function, and this will delete all the objects inside the S3 bucket that we created with CloudFormation. You can invoke this Lambda function via API Gateway as well:
+I have written a python code that will be used by a Lambda function, and this will delete all the objects inside the S3 bucket that we created earlier with CloudFormation. You can invoke this Lambda function via API Gateway as well:
 
 ![POST HTTP method for emptying bucket](Postman-POST-empty-bucket.jpg)
 
@@ -119,7 +120,7 @@ If you do not need the infrastructure anymore, you can clean up everything that 
 
 #### CloudTrail stack
 
-This will delete everything *except* the S3 bucket. This will differ based on the environment and I think it's better to retain the bucket containing tracing information for any further use.
+This will delete everything *except* the S3 bucket. This will differ based on the environment, and I think it's better to retain the bucket containing tracing information for any further use.
 
 ```
 aws cloudformation delete-stack --stack-name mycloudtrailstack
